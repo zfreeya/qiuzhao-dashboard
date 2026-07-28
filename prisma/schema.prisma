@@ -1,0 +1,129 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// ============================================================
+// Interview — 对应 TS Interview 类型
+// ============================================================
+
+model Interview {
+  id             String  @id
+  applicationId  String
+  round          String  @default("其他")
+  company        String
+  position       String
+  status         String
+  interviewDate  String
+  updatedAt      String
+  companyId      String?
+  location       String?
+  link           String?
+  jd             String  @default("")
+  questions      String  @default("[]")  // JSON: Question[]
+  recordings     String  @default("[]")  // JSON: Recording[]
+  summary        String  @default("")
+  aiReview       String?                 // JSON: AIReview?
+}
+
+// ============================================================
+// Application — 对应 TS Application 类型
+// ============================================================
+
+model Application {
+  id         String  @id
+  companyId  String
+  company    String
+  position   String
+  department String?
+  status     String
+  applyDate  String
+  updatedAt  String
+  notes      String?
+}
+
+// ============================================================
+// Company — 对应 TS Company 类型
+//   Application.companyId 引用 Company.id
+//   Interview.companyId 可选引用 Company.id
+// ============================================================
+
+model Company {
+  id       String  @id
+  name     String
+  industry String
+  tags     String  @default("[]") // JSON: string[]
+  website  String?
+  notes    String?
+}
+
+// ============================================================
+// AIAnalysis — 对应 TS AIAnalysis 类型
+//   通过 targetType + targetId 多态关联到任意实体
+// ============================================================
+
+model AIAnalysis {
+  id            String  @id
+  type          String
+  targetType    String
+  targetId      String
+  result        String  // JSON: AIAnalysisResult
+  input         String  // JSON: AIAnalysisInput
+  promptVersion String
+  modelVersion  String
+  createdAt     String
+}
+
+// ============================================================
+// Task — 对应 TS Task 类型
+// ============================================================
+
+model Task {
+  id                String  @id
+  content           String
+  status            String
+  priority          String
+  source            String
+  aiAnalysisId      String?
+  applicationId     String?
+  relatedCapability String?
+  sourceId          String?
+  createdAt         String
+  completedAt       String?
+  feedback          String?
+  feedbackStatus    String?
+  feedbackAnalysis  String? // JSON: TaskFeedbackAnalysis?
+}
+
+// ============================================================
+// UserProfile — 对应 TS UserProfile 类型
+// ============================================================
+
+model UserProfile {
+  id          String @id
+  targetRoles String @default("[]")  // JSON: string[]
+  projects    String @default("[]")  // JSON: UserProject[]
+  skills      String @default("[]")  // JSON: string[]
+  background  String @default("")
+  goals       String @default("[]")  // JSON: string[]
+}
+
+// ============================================================
+// UserMemory — 对应 TS UserMemory 类型（AI 长期记忆）
+// ============================================================
+
+model UserMemory {
+  id                String @id
+  strengths         String @default("[]")  // JSON: string[]
+  weaknesses        String @default("[]")  // JSON: string[]
+  targetRoles       String @default("[]")  // JSON: string[]
+  projects          String @default("[]")  // JSON: UserProject[]
+  interviewPatterns String @default("[]")  // JSON: InterviewPattern[]
+  learningGoals     String @default("[]")  // JSON: LearningGoal[]
+  aiSummary         String @default("")
+  updatedAt         String
+}

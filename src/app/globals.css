@@ -1,0 +1,41 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-brand-50/30 text-brand-900 antialiased;
+  }
+
+  /* Visible focus rings for keyboard navigation (a11y) */
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-brand-500;
+  }
+}
+
+@layer components {
+  /* Card base — flat design, minimal shadow */
+  .card {
+    @apply rounded-2xl border border-brand-200/60 bg-white transition-shadow duration-200;
+  }
+  .card:hover {
+    box-shadow: 0 2px 12px rgba(52, 64, 85, 0.08);
+  }
+
+  /* Button base */
+  .btn-primary {
+    @apply inline-flex items-center gap-1.5 rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-medium text-white
+           transition-all duration-150 hover:bg-brand-600 active:scale-[0.97]
+           focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500
+           disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  /* Input base */
+  .input-base {
+    @apply rounded-xl border border-brand-200 bg-white px-4 py-2.5 text-sm
+           outline-none transition placeholder:text-brand-300
+           focus:border-brand-400 focus:ring-2 focus:ring-brand-100;
+  }
+}
