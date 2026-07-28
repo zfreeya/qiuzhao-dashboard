@@ -1,6 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
+
+export function generateStaticParams() {
+  return [];
+}
 import Link from "next/link";
 import { notFound, useParams } from "next/navigation";
 import {

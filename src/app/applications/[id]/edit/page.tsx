@@ -1,6 +1,10 @@
 "use client";
 
 import { useState } from "react";
+
+export function generateStaticParams() {
+  return [];
+}
 import Link from "next/link";
 import { notFound, useParams, useRouter } from "next/navigation";
 import { useInterviews, type ApplicationStatus } from "../../../../_shared/InterviewContext";
