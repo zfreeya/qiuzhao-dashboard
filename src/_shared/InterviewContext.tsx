@@ -359,21 +359,22 @@ export function InterviewProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    const TIMEOUT_MS = 5000;
+    const TIMEOUT_MS = 2000;
 
     async function hydrate() {
       console.log("[hydration] 开始数据加载...");
 
-      const withTimeout = <T,>(promise: Promise<T>, label: string): Promise<T | undefined> =>
-        Promise.race([
-          promise,
-          new Promise<undefined>((resolve) =>
-            setTimeout(() => {
-              console.warn(`[hydration] ${label} 超时 (${TIMEOUT_MS}ms)，跳过`);
-              resolve(undefined);
-            }, TIMEOUT_MS),
-          ),
-        ]);
+      const withTimeout = <T,>(promise: Promise<T>, label: string): Promise<T | undefined> => {
+        let timer: ReturnType<typeof setTimeout>;
+        const timeoutPromise = new Promise<undefined>((resolve) => {
+          timer = setTimeout(() => {
+            console.warn(`[hydration] ${label} 超时 (${TIMEOUT_MS}ms)，跳过`);
+            resolve(undefined);
+          }, TIMEOUT_MS);
+        });
+        promise.finally(() => clearTimeout(timer));
+        return Promise.race([promise, timeoutPromise]);
+      };
 
       const results = await Promise.allSettled([
         withTimeout(ds.getInterviews(), "getInterviews"),

@@ -40,7 +40,6 @@ const config: Config = {
       },
       fontFamily: {
         sans: [
-          '"Plus Jakarta Sans"',
           "-apple-system",
           "BlinkMacSystemFont",
           '"Segoe UI"',
