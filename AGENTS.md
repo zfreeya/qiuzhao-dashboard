@@ -227,3 +227,89 @@ npm run lint     # ESLint 检查
 ```
 
 Prisma 未激活，无需 `prisma generate` / `prisma migrate`。
+
+---
+
+## GitHub Pages 部署
+
+### 部署方式
+
+项目通过 GitHub Actions 自动部署到 GitHub Pages。`.github/workflows/deploy.yml` 在每次 push 到 master 时触发。
+
+**仓库设置要求**: Settings → Pages → Source 必须选 "GitHub Actions"（非 "Deploy from a branch"）。
+
+### 静态导出配置
+
+`next.config.mjs` 关键配置：
+
+```js
+const nextConfig = {
+  output: "export",        // 生成纯静态文件（API Routes 不会被包含）
+  basePath: "/qiuzhao-dashboard",  // GitHub Pages 项目路径前缀
+  images: { unoptimized: true },   // 静态导出必须禁用图片优化
+};
+```
+
+### 动态路由的 generateStaticParams 陷阱 ⚠️
+
+Next.js 14 `output: "export"` 对动态路由（`[id]`）有严格要求：
+
+1. **必须导出 `generateStaticParams()`**，否则构建直接报错：`Page is missing "generateStaticParams()"`
+2. **返回值 `length` 必须 > 0**，返回空数组 `[]` 会被判定为"未提供" —— 这是最容易踩的坑。解决：返回至少一个占位参数 `[{ id: "placeholder" }]`
+3. **`"use client"` 和 `generateStaticParams` 不能在同一文件共存**。必须拆分：
+   - `page.tsx`（服务端组件）：导出 `generateStaticParams`，用 `dynamic(() => import("./ClientPage"))` 加载客户端组件
+   - `ClientPage.tsx`（客户端组件）：`"use client"` + 所有 UI 逻辑
+
+**错误示例**（三种都会构建失败）：
+```tsx
+// 错误1: 动态路由缺少 generateStaticParams
+"use client";
+export default function Page() { ... }
+
+// 错误2: 返回空数组——仍然报 missing generateStaticParams
+export function generateStaticParams() { return []; }
+"use client";
+export default function Page() { ... }
+
+// 错误3: use client 和 generateStaticParams 共存
+"use client";
+export function generateStaticParams() { return [{ id: "x" }]; }
+export default function Page() { ... }
+// → 报错: cannot use both "use client" and "generateStaticParams()"
+```
+
+**正确写法**：
+
+`page.tsx`（服务端组件）：
+```tsx
+import dynamic from "next/dynamic";
+const ClientPage = dynamic(() => import("./ClientPage"), { ssr: true });
+
+export function generateStaticParams() {
+  return [{ id: "placeholder" }];
+}
+
+export default function Page() {
+  return <ClientPage />;
+}
+```
+
+`ClientPage.tsx`（客户端组件）：
+```tsx
+"use client";
+// ... 所有原有的 UI 逻辑、hooks、imports
+export default function ClientPage() { ... }
+```
+
+### SPA 路由 404 回退
+
+GitHub Pages 不转发未知路径到 `index.html`。为解决客户端路由刷新 404 问题，deploy workflow 将 `out/index.html` 复制为 `out/404.html`，GitHub Pages 会对未知路径自动返回 404 页面内容，Next.js 客户端路由随后接管并渲染正确页面。
+
+### Git 远程连接
+
+在中国大陆 HTTPS 直连 GitHub 经常超时，推荐使用 SSH 方式推送。仓库已配置为 `git@github.com:zfreeya/qiuzhao-dashboard.git`。
+
+### 局限性
+
+- **API Routes 不可用**：6 个 `/api/ai/*` 路由在静态导出中不会包含。AI 功能（JD 分析、面试诊断等）在 GitHub Pages 上会失败。这些功能需要服务端运行环境（如 Vercel）或重构为客户端直接调用 LLM API。
+- **核心功能完全正常**：面试管理、投递追踪、公司库、任务管理、个人画像等全部基于 localStorage，无需后端。
