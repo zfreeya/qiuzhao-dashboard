@@ -6,7 +6,30 @@
 
 [GitHub 仓库](https://github.com/zfreeya/qiuzhao-dashboard)
 
-> 当前业务数据默认保存在浏览器 localStorage 中，AI 功能通过 Next.js 服务端接口调用 DeepSeek。仓库默认配置为静态导出，使用真实 AI 前需要调整运行配置；详见下文。Prisma / SQLite 属于预留实现，尚未启用。
+> 当前业务数据默认保存在浏览器 localStorage 中，AI 功能通过 Next.js 服务端接口调用 DeepSeek。当前配置采用 Next.js 服务端运行，可直接在本地使用 AI 接口；详见下文。Prisma / SQLite 属于预留实现，尚未启用。
+
+## 页面预览
+
+以下页面截图使用应用自带的示例数据，包含公司、岗位、面试记录、任务与能力评分。
+
+![带示例投递与任务的求职仪表盘](docs/images/dashboard.jpg)
+
+<details>
+<summary>查看公司、面试与能力画像页面</summary>
+
+### 公司库：多家目标公司与岗位进度
+![包含示例公司的公司库](docs/images/companies.jpg)
+
+### 面试列表：按公司展示面试轮次
+![包含示例面试记录的面试列表](docs/images/interviews.jpg)
+
+### 面试复盘：岗位分析、JD、问答和复盘总结
+![包含示例问答和复盘记录的面试详情](docs/images/interview-detail.jpg)
+
+### 能力画像：根据示例记录汇总的评分与建议
+![包含示例评分的能力画像](docs/images/profile.jpg)
+
+</details>
 
 ## 核心功能
 
@@ -53,7 +76,7 @@
 
 ## 页面与模块
 
-以下为应用路由；默认配置下，浏览器访问路径需加上 `/qiuzhao-dashboard` 前缀。
+以下为当前服务端配置的应用路由，无需额外路径前缀。
 
 | 路由 | 页面 | 主要用途 |
 | --- | --- | --- |
@@ -82,7 +105,7 @@
 | 默认存储 | 浏览器 localStorage，使用带版本号的数据封装 |
 | 数据层扩展 | Repository 接口；预留 Prisma 7 / SQLite Schema 与仓储代码 |
 | 代码检查 | ESLint 8、eslint-config-next |
-| 部署配置 | GitHub Actions、GitHub Pages 静态导出 |
+| 部署配置 | Next.js 服务端；保留历史 GitHub Pages 工作流 |
 
 ## 项目结构
 
@@ -141,34 +164,21 @@ npm ci
 npm run dev
 ```
 
-按当前 `basePath` 配置访问：
-
-**http://localhost:3000/qiuzhao-dashboard**
+访问 **http://localhost:3000**。如果端口已被占用，可运行 `npm run dev -- --port 3001`，访问 **http://localhost:3001**。
 
 建议首次使用时，先在公司库创建公司，再新增投递和面试记录；随后填写 JD、面试问答与复盘总结，逐步积累可用于分析的数据。
 
 ### 4. 配置真实 AI 分析（可选）
 
-在项目根目录创建 `.env.local`：
+复制环境变量模板：
 
-```dotenv
-DEEPSEEK_API_KEY=your_deepseek_api_key
+```bash
+cp .env.example .env.local
 ```
 
-服务端代码使用 `https://api.deepseek.com` 和 `deepseek-chat`。密钥仅供服务端读取，仓库已忽略 `.env*.local` 文件。
+在 `.env.local` 中填写 `DEEPSEEK_API_KEY`，然后重启开发服务器。密钥由服务端读取，不要使用 `NEXT_PUBLIC_` 前缀。`.env` 和 `.env.*` 已忽略，仅保留无密钥的 `.env.example`。
 
-**仅设置密钥还不够：当前 AI 请求使用 `/api/...` 绝对路径，而默认应用带有 `/qiuzhao-dashboard` 前缀。** 为方便本地使用完整功能，可以将 `next.config.mjs` 调整为以下服务端运行配置：
-
-```js
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  images: { unoptimized: true },
-};
-
-export default nextConfig;
-```
-
-这一配置移除了静态导出与路径前缀。重启开发服务器后，访问 **http://localhost:3000**，AI 请求与页面即可使用同一根路径。若需要保留子路径部署，应同步调整客户端 API 请求地址及部署路由。
+服务端使用 `https://api.deepseek.com` 和 `deepseek-chat`。当前 `next.config.mjs` 已支持服务端运行，无需修改路径配置。
 
 调用 AI 时，相关 JD、问答、个人资料或历史摘要会按功能需要发送给模型服务。未配置密钥或接口不可用时，部分功能会返回规则或模拟结果，具体见下文。
 
@@ -179,7 +189,7 @@ export default nextConfig;
 | `npm run dev` | 启动开发服务器 |
 | `npm run lint` | 执行 ESLint 检查 |
 | `npm run build` | 执行 Next.js 生产构建 |
-| `npm run start` | 启动服务端生产实例，需要先构建并移除 `output: "export"` |
+| `npm run start` | 启动服务端生产实例，需要先构建 |
 
 服务端配置下，可使用：
 
@@ -240,15 +250,13 @@ ScheduleEvent 独立日程
 
 ## 部署说明
 
-仓库包含 GitHub Pages 工作流：向 `master` 分支推送后执行依赖安装、生产构建并上传 `out/`，同时将首页复制为 `404.html`，尝试提供客户端路由回退。使用该工作流时，仓库 Pages 来源需选择 **GitHub Actions**。
+当前配置支持 `npm run build` 后执行 `npm run start`，也可部署到支持 Next.js 服务端的环境。在部署平台单独配置 `DEEPSEEK_API_KEY`，不要提交本地环境文件。
 
-当前配置需要关注以下限制：
+仓库保留历史 GitHub Pages 工作流，已改为手动触发，避免推送时按旧配置部署。该工作流期待 `out/` 静态产物，与当前服务端配置不兼容。若恢复纯静态版本，需要单独处理 API 和动态详情路由；GitHub Pages 无法承载本项目的服务端 AI 接口。
 
-- `output: "export"` 面向静态托管，无法提供项目中的 POST AI 接口。仓库同时保留这些接口，因此静态构建兼容性也需要实际验证或调整，不能仅凭工作流文件认定部署成功。
-- 动态详情页使用 `generateStaticParams()` 生成 `placeholder` 占位路径，运行时新增的记录不会自动生成对应静态页面。详情页直接访问、刷新和 404 回退行为仍需在目标环境验证。
-- 若要完整使用 AI 功能，建议采用支持 Next.js 服务端运行的部署环境，移除静态导出配置，并处理好 API 地址与路径前缀。
+## Git 提交范围
 
-本说明基于代码与配置检查，未验证线上站点状态，也未执行完整生产构建或真实模型调用。
+保留源码、`package-lock.json`、`.env.example`、文档及 `docs/images/` 页面截图。`node_modules/`、`.next/`、`out/`、构建缓存、日志和本地密钥文件已在 `.gitignore` 中排除。依赖通过 `npm ci` 恢复，无需上传 `node_modules/`。
 
 ## 项目亮点
 
@@ -273,4 +281,4 @@ ScheduleEvent 独立日程
 
 ---
 
-文档依据：仓库提交 `0adb406`，检查日期为 2026 年 10 月 9 日。功能描述以该版本实际代码为准。
+文档更新：2026 年 10 月 10 日。文档组织参考 [Next.js SaaS Starter](https://github.com/nextjs/saas-starter) 的功能介绍、快速启动与部署说明结构，内容以本项目实现为准。
